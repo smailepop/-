@@ -276,9 +276,9 @@
             flex: 1;
             overflow-y: scroll;
             scroll-snap-type: y mandatory;
-            scroll-behavior: smooth;
             padding: 90px 0;
             -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
         }
         
         .picker-scroll-area::-webkit-scrollbar {
@@ -1029,6 +1029,7 @@
                 
                 const scrollArea = document.createElement('div');
                 scrollArea.className = 'picker-scroll-area';
+                scrollArea.style.WebkitOverflowScrolling = 'touch'; // iPhoneのスムーズスクロール有効化
                 
                 // 無限スクロール用のデータ生成（5回分のループ）
                 const range = field.max - field.min + 1;
@@ -1075,12 +1076,20 @@
                 
                 // スクロール処理
                 let isScrolling;
+                let scrollTimeout;
                 scrollArea.addEventListener('scroll', () => {
                     clearTimeout(isScrolling);
-                    isScrolling = setTimeout(() => {
-                        snapToNearest(scrollArea, field, options);
-                    }, 30);
+                    clearTimeout(scrollTimeout);
+                    
+                    // すぐに表示更新
                     updateVisibleOptions(scrollArea, options);
+                    
+                    // スクロール終了後にスナップ（少し遅延）
+                    isScrolling = setTimeout(() => {
+                        scrollTimeout = setTimeout(() => {
+                            snapToNearest(scrollArea, field, options);
+                        }, 100);
+                    }, 150);
                 });
                 
                 // 初期位置設定
@@ -1111,7 +1120,14 @@
                 const itemHeight = 40;
                 const index = Math.round(scrollTop / itemHeight);
                 
+                // スムーズにスナップ
+                scrollArea.style.scrollBehavior = 'smooth';
                 scrollArea.scrollTop = index * itemHeight;
+                
+                setTimeout(() => {
+                    scrollArea.style.scrollBehavior = '';
+                }, 300);
+                
                 updateVisibleOptions(scrollArea, options);
                 
                 const value = parseInt(options[index].dataset.value);

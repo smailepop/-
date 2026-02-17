@@ -2173,6 +2173,10 @@
             
             console.log('Parsed values:', {year, month, day, hours, minutes, seconds});
             
+            // DOMをクリア
+            document.getElementById('editDatePicker').innerHTML = '';
+            document.getElementById('editTimePicker').innerHTML = '';
+            
             // 編集用ピッカーを再作成
             infinitePickers['editDate'] = createInfinitePicker('editDatePicker', [
                 {name: 'year', label: '年', min: 2020, max: 2100, default: year},
@@ -2209,6 +2213,10 @@
             const seconds = totalSeconds % 60;
             
             console.log('Parsed aggregated values:', {year, month, day, hours, minutes, seconds});
+            
+            // DOMをクリア
+            document.getElementById('editDatePicker').innerHTML = '';
+            document.getElementById('editTimePicker').innerHTML = '';
             
             // 編集用ピッカーを再作成
             infinitePickers['editDate'] = createInfinitePicker('editDatePicker', [

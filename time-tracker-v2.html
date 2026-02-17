@@ -900,6 +900,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
     <script>
         // データ構造
         let tasks = JSON.parse(localStorage.getItem('tasks')) || ['YouTube対応', 'GAS開発', '顧客対応'];
@@ -1043,6 +1044,21 @@
                     opt.textContent = value;
                     opt.dataset.value = value;
                     opt.dataset.index = i;
+                    
+                    // クリックで選択（画面に見えてる範囲のみ）
+                    opt.addEventListener('click', (e) => {
+                        const rect = scrollArea.getBoundingClientRect();
+                        const optRect = opt.getBoundingClientRect();
+                        
+                        // 画面に見えてる範囲内かチェック（中央±100px程度）
+                        const scrollCenter = rect.top + rect.height / 2;
+                        const distance = Math.abs(optRect.top + optRect.height / 2 - scrollCenter);
+                        
+                        if (distance < 100) {
+                            scrollToValue(value, scrollArea, field, options);
+                        }
+                    });
+                    
                     scrollArea.appendChild(opt);
                     options.push(opt);
                 }
@@ -1063,7 +1079,7 @@
                     clearTimeout(isScrolling);
                     isScrolling = setTimeout(() => {
                         snapToNearest(scrollArea, field, options);
-                    }, 50);
+                    }, 30);
                     updateVisibleOptions(scrollArea, options);
                 });
                 
@@ -1115,6 +1131,31 @@
                 });
             }
             
+            function scrollToValue(value, scrollArea, field, options) {
+                // 現在のスクロール位置から最も近い target value を探す
+                const currentScrollTop = scrollArea.scrollTop;
+                const currentIndex = Math.round(currentScrollTop / 40);
+                
+                let closestIndex = -1;
+                let minDistance = Infinity;
+                
+                options.forEach((opt, idx) => {
+                    if (parseInt(opt.dataset.value) === value) {
+                        const distance = Math.abs(idx - currentIndex);
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            closestIndex = idx;
+                        }
+                    }
+                });
+                
+                if (closestIndex !== -1) {
+                    scrollArea.scrollTop = closestIndex * 40;
+                    state[field.name] = value;
+                    updateVisibleOptions(scrollArea, options);
+                }
+            }
+            
             return {
                 getValue: (fieldName) => state[fieldName],
                 setValue: (fieldName, value) => {
@@ -1147,17 +1188,43 @@
             
             const today = new Date();
             
+            // 前回の手動入力値を復元
+            const lastManualDate = localStorage.getItem('lastManualDate');
+            const lastManualTime = localStorage.getItem('lastManualTime');
+            
+            let manualDateDefaults = {
+                year: today.getFullYear(),
+                month: today.getMonth() + 1,
+                day: today.getDate()
+            };
+            
+            let manualTimeDefaults = {
+                hours: 0,
+                minutes: 0,
+                seconds: 0
+            };
+            
+            if (lastManualDate) {
+                const savedDate = JSON.parse(lastManualDate);
+                manualDateDefaults = savedDate;
+            }
+            
+            if (lastManualTime) {
+                const savedTime = JSON.parse(lastManualTime);
+                manualTimeDefaults = savedTime;
+            }
+            
             // 手動入力用ピッカー
             infinitePickers['manualDate'] = createInfinitePicker('manualDatePicker', [
-                {name: 'year', label: '年', min: 2020, max: 2100, default: today.getFullYear()},
-                {name: 'month', label: '月', min: 1, max: 12, default: today.getMonth() + 1},
-                {name: 'day', label: '日', min: 1, max: 31, default: today.getDate()}
+                {name: 'year', label: '年', min: 2020, max: 2100, default: manualDateDefaults.year},
+                {name: 'month', label: '月', min: 1, max: 12, default: manualDateDefaults.month},
+                {name: 'day', label: '日', min: 1, max: 31, default: manualDateDefaults.day}
             ]);
             
             infinitePickers['manualTime'] = createInfinitePicker('manualTimePicker', [
-                {name: 'hours', label: '時', min: 0, max: 99, default: 0},
-                {name: 'minutes', label: '分', min: 0, max: 59, default: 0},
-                {name: 'seconds', label: '秒', min: 0, max: 59, default: 0}
+                {name: 'hours', label: '時', min: 0, max: 99, default: manualTimeDefaults.hours},
+                {name: 'minutes', label: '分', min: 0, max: 59, default: manualTimeDefaults.minutes},
+                {name: 'seconds', label: '秒', min: 0, max: 59, default: manualTimeDefaults.seconds}
             ]);
             
             // 履歴用ピッカー
@@ -1250,6 +1317,9 @@
                 tasks.push(taskName);
                 saveTasks();
                 loadTasks();
+                document.getElementById('newTaskName').value = '';
+            } else if (tasks.includes(taskName)) {
+                alert('その作業名は既に登録されています');
                 document.getElementById('newTaskName').value = '';
             }
         }
@@ -1517,9 +1587,9 @@
 
             saveRecords();
             
-            infinitePickers['manualTime'].setValue('hours', 0);
-            infinitePickers['manualTime'].setValue('minutes', 0);
-            infinitePickers['manualTime'].setValue('seconds', 0);
+            // 前回の入力値を保存（時間だけリセット）
+            localStorage.setItem('lastManualDate', JSON.stringify(dateState));
+            localStorage.setItem('lastManualTime', JSON.stringify(timeState));
             
             alert('記録を追加しました');
             updateDailyView();
@@ -1891,9 +1961,40 @@
                                     return `${context.label}: ${formatTimeJapanese(seconds)}`;
                                 }
                             }
+                        },
+                        datalabels: {
+                            color: '#ffffff',
+                            font: {
+                                weight: 'bold',
+                                size: 11
+                            },
+                            formatter: (value, ctx) => {
+                                const percentage = ((value / totalSeconds) * 100).toFixed(1);
+                                const label = ctx.chart.data.labels[ctx.dataIndex];
+                                const seconds = value;
+                                
+                                // パーセントが5%以上の時だけ表示
+                                if (percentage >= 5) {
+                                    const hours = Math.floor(seconds / 3600);
+                                    const minutes = Math.floor((seconds % 3600) / 60);
+                                    
+                                    let timeStr = '';
+                                    if (hours > 0 && minutes > 0) {
+                                        timeStr = `${hours}時間${minutes}分`;
+                                    } else if (hours > 0) {
+                                        timeStr = `${hours}時間`;
+                                    } else {
+                                        timeStr = `${minutes}分`;
+                                    }
+                                    
+                                    return `${label}\n${timeStr}\n${percentage}%`;
+                                }
+                                return '';
+                            }
                         }
                     }
-                }
+                },
+                plugins: [ChartDataLabels]
             });
 
             legendDiv.innerHTML = sortedEntries.map(([task], index) => `

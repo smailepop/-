@@ -1036,6 +1036,14 @@
                 
                 let options = [];
                 
+                // 上にダミー要素を追加（スクロール範囲確保）
+                for (let i = 0; i < 5; i++) {
+                    const dummy = document.createElement('div');
+                    dummy.className = 'picker-option-infinite';
+                    dummy.style.visibility = 'hidden';
+                    scrollArea.appendChild(dummy);
+                }
+                
                 for (let i = 0; i < totalItems; i++) {
                     const value = field.min + (i % range);
                     const opt = document.createElement('div');
@@ -1062,6 +1070,14 @@
                     options.push(opt);
                 }
                 
+                // 下にダミー要素を追加（スクロール範囲確保）
+                for (let i = 0; i < 5; i++) {
+                    const dummy = document.createElement('div');
+                    dummy.className = 'picker-option-infinite';
+                    dummy.style.visibility = 'hidden';
+                    scrollArea.appendChild(dummy);
+                }
+                
                 column.appendChild(scrollArea);
                 
                 // ラベル
@@ -1082,6 +1098,24 @@
                     // すぐに表示更新
                     updateVisibleOptions(scrollArea, options);
                     
+                    // エンドレスループ処理
+                    const scrollTop = scrollArea.scrollTop;
+                    const maxScroll = scrollArea.scrollHeight - scrollArea.clientHeight;
+                    const itemHeight = 40;
+                    const loopThreshold = range * itemHeight; // 1ループ分
+                    
+                    // 上端に近づいたら下にジャンプ
+                    if (scrollTop < loopThreshold) {
+                        scrollArea.scrollTop = scrollTop + loopThreshold * 2;
+                        return;
+                    }
+                    
+                    // 下端に近づいたら上にジャンプ
+                    if (scrollTop > maxScroll - loopThreshold) {
+                        scrollArea.scrollTop = scrollTop - loopThreshold * 2;
+                        return;
+                    }
+                    
                     // スクロール終了後にスナップ（少し遅延）
                     isScrolling = setTimeout(() => {
                         scrollTimeout = setTimeout(() => {
@@ -1090,12 +1124,11 @@
                     }, 150);
                 });
                 
-                // 初期位置設定
+                // 初期位置設定（ダミー要素分を考慮）
                 setTimeout(() => {
                     const targetValue = field.default;
-                    // 中央のセット（2セット目）の中で目的の値を探す
                     const targetIndex = centerOffset + (targetValue - field.min);
-                    scrollArea.scrollTop = targetIndex * 40;
+                    scrollArea.scrollTop = (targetIndex + 5) * 40; // ダミー5個分オフセット
                     updateVisibleOptions(scrollArea, options);
                 }, 10);
                 
@@ -1116,26 +1149,32 @@
             function snapToNearest(scrollArea, field, options) {
                 const scrollTop = scrollArea.scrollTop;
                 const itemHeight = 40;
-                const index = Math.round(scrollTop / itemHeight);
+                // ダミー5個分を引く
+                const adjustedScrollTop = scrollTop - (5 * itemHeight);
+                const index = Math.round(adjustedScrollTop / itemHeight);
                 
-                // スムーズにスナップ
-                scrollArea.style.scrollBehavior = 'smooth';
-                scrollArea.scrollTop = index * itemHeight;
-                
-                setTimeout(() => {
-                    scrollArea.style.scrollBehavior = '';
-                }, 300);
-                
-                updateVisibleOptions(scrollArea, options);
-                
-                const value = parseInt(options[index].dataset.value);
-                state[field.name] = value;
+                if (index >= 0 && index < options.length) {
+                    // スムーズにスナップ
+                    scrollArea.style.scrollBehavior = 'smooth';
+                    scrollArea.scrollTop = (index + 5) * itemHeight; // ダミー分戻す
+                    
+                    setTimeout(() => {
+                        scrollArea.style.scrollBehavior = '';
+                    }, 300);
+                    
+                    updateVisibleOptions(scrollArea, options);
+                    
+                    const value = parseInt(options[index].dataset.value);
+                    state[field.name] = value;
+                }
             }
             
             function updateVisibleOptions(scrollArea, options) {
                 const scrollTop = scrollArea.scrollTop;
                 const itemHeight = 40;
-                const centerIndex = Math.round(scrollTop / itemHeight);
+                // ダミー5個分を引く
+                const adjustedScrollTop = scrollTop - (5 * itemHeight);
+                const centerIndex = Math.round(adjustedScrollTop / itemHeight);
                 
                 options.forEach((opt, idx) => {
                     opt.classList.remove('selected');
@@ -1179,9 +1218,8 @@
                         const range = picker.field.max - picker.field.min + 1;
                         const totalItems = range * 5;
                         const centerOffset = Math.floor(totalItems / 2);
-                        // 中央のセット（2セット目）の中で目的の値を探す
                         const targetIndex = centerOffset + (value - picker.field.min);
-                        picker.scrollArea.scrollTop = targetIndex * 40;
+                        picker.scrollArea.scrollTop = (targetIndex + 5) * 40; // ダミー5個分オフセット
                         updateVisibleOptions(picker.scrollArea, picker.options);
                     }
                 },

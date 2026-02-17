@@ -2157,15 +2157,19 @@
             
             document.getElementById('editTask').value = record.task;
             
-            const dateParts = record.date.split('-');
-            infinitePickers['editDate'].setValue('year', parseInt(dateParts[0]));
-            infinitePickers['editDate'].setValue('month', parseInt(dateParts[1]));
-            infinitePickers['editDate'].setValue('day', parseInt(dateParts[2]));
-            infinitePickers['editTime'].setValue('hours', record.hours || 0);
-            infinitePickers['editTime'].setValue('minutes', record.minutes || 0);
-            infinitePickers['editTime'].setValue('seconds', record.seconds || 0);
-            
+            // モーダルを開く
             document.getElementById('editModal').classList.add('active');
+            
+            // 少し遅延してピッカーの値を設定（レンダリング後に設定）
+            setTimeout(() => {
+                const dateParts = record.date.split('-');
+                infinitePickers['editDate'].setValue('year', parseInt(dateParts[0]));
+                infinitePickers['editDate'].setValue('month', parseInt(dateParts[1]));
+                infinitePickers['editDate'].setValue('day', parseInt(dateParts[2]));
+                infinitePickers['editTime'].setValue('hours', record.hours || 0);
+                infinitePickers['editTime'].setValue('minutes', record.minutes || 0);
+                infinitePickers['editTime'].setValue('seconds', record.seconds || 0);
+            }, 100);
         }
 
         function editAggregatedRecord(task, date, totalSeconds) {
@@ -2174,20 +2178,24 @@
             
             document.getElementById('editTask').value = task;
             
-            const dateParts = date.split('-');
-            infinitePickers['editDate'].setValue('year', parseInt(dateParts[0]));
-            infinitePickers['editDate'].setValue('month', parseInt(dateParts[1]));
-            infinitePickers['editDate'].setValue('day', parseInt(dateParts[2]));
-            
-            const hours = Math.floor(totalSeconds / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            const seconds = totalSeconds % 60;
-            
-            infinitePickers['editTime'].setValue('hours', hours);
-            infinitePickers['editTime'].setValue('minutes', minutes);
-            infinitePickers['editTime'].setValue('seconds', seconds);
-            
+            // モーダルを開く
             document.getElementById('editModal').classList.add('active');
+            
+            // 少し遅延してピッカーの値を設定
+            setTimeout(() => {
+                const dateParts = date.split('-');
+                infinitePickers['editDate'].setValue('year', parseInt(dateParts[0]));
+                infinitePickers['editDate'].setValue('month', parseInt(dateParts[1]));
+                infinitePickers['editDate'].setValue('day', parseInt(dateParts[2]));
+                
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+                
+                infinitePickers['editTime'].setValue('hours', hours);
+                infinitePickers['editTime'].setValue('minutes', minutes);
+                infinitePickers['editTime'].setValue('seconds', seconds);
+            }, 100);
         }
 
         function saveEdit() {
@@ -2256,7 +2264,10 @@
 
         // ユーティリティ
         function formatDate(date) {
-            return date.toISOString().split('T')[0];
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         }
 
         function formatTimeJapanese(totalSeconds) {

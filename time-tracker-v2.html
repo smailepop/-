@@ -891,7 +891,7 @@
             </div>
             <div class="modal-buttons">
                 <button class="btn btn-danger" onclick="deleteRecord()">削除</button>
-                <button class="btn btn-secondary" onclick="closeModal('editModal')">キャンセル</button>
+                <button class="btn btn-secondary" onclick="closeEditModal()">キャンセル</button>
                 <button class="btn btn-success" onclick="saveEdit()">保存</button>
             </div>
         </div>
@@ -2150,52 +2150,81 @@
         // 編集・削除
         function editRecord(recordId) {
             const record = records.find(r => r.id === recordId);
-            if (!record) return;
+            if (!record) {
+                console.error('Record not found:', recordId);
+                return;
+            }
 
+            console.log('Editing record:', record);
+            
             currentEditId = recordId;
             currentEditType = 'single';
             
             document.getElementById('editTask').value = record.task;
             
+            // 日付と時間のパース
+            const dateParts = record.date.split('-');
+            const year = parseInt(dateParts[0]);
+            const month = parseInt(dateParts[1]);
+            const day = parseInt(dateParts[2]);
+            const hours = parseInt(record.hours) || 0;
+            const minutes = parseInt(record.minutes) || 0;
+            const seconds = parseInt(record.seconds) || 0;
+            
+            console.log('Parsed values:', {year, month, day, hours, minutes, seconds});
+            
+            // 編集用ピッカーを再作成
+            infinitePickers['editDate'] = createInfinitePicker('editDatePicker', [
+                {name: 'year', label: '年', min: 2020, max: 2100, default: year},
+                {name: 'month', label: '月', min: 1, max: 12, default: month},
+                {name: 'day', label: '日', min: 1, max: 31, default: day}
+            ]);
+            
+            infinitePickers['editTime'] = createInfinitePicker('editTimePicker', [
+                {name: 'hours', label: '時', min: 0, max: 99, default: hours},
+                {name: 'minutes', label: '分', min: 0, max: 59, default: minutes},
+                {name: 'seconds', label: '秒', min: 0, max: 59, default: seconds}
+            ]);
+            
             // モーダルを開く
             document.getElementById('editModal').classList.add('active');
-            
-            // 少し遅延してピッカーの値を設定（レンダリング後に設定）
-            setTimeout(() => {
-                const dateParts = record.date.split('-');
-                infinitePickers['editDate'].setValue('year', parseInt(dateParts[0]));
-                infinitePickers['editDate'].setValue('month', parseInt(dateParts[1]));
-                infinitePickers['editDate'].setValue('day', parseInt(dateParts[2]));
-                infinitePickers['editTime'].setValue('hours', record.hours || 0);
-                infinitePickers['editTime'].setValue('minutes', record.minutes || 0);
-                infinitePickers['editTime'].setValue('seconds', record.seconds || 0);
-            }, 100);
         }
 
         function editAggregatedRecord(task, date, totalSeconds) {
             currentEditType = 'aggregated';
             currentEditId = `${task}-${date}`;
             
+            console.log('Editing aggregated:', {task, date, totalSeconds});
+            
             document.getElementById('editTask').value = task;
+            
+            // 日付と時間のパース
+            const dateParts = date.split('-');
+            const year = parseInt(dateParts[0]);
+            const month = parseInt(dateParts[1]);
+            const day = parseInt(dateParts[2]);
+            
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            
+            console.log('Parsed aggregated values:', {year, month, day, hours, minutes, seconds});
+            
+            // 編集用ピッカーを再作成
+            infinitePickers['editDate'] = createInfinitePicker('editDatePicker', [
+                {name: 'year', label: '年', min: 2020, max: 2100, default: year},
+                {name: 'month', label: '月', min: 1, max: 12, default: month},
+                {name: 'day', label: '日', min: 1, max: 31, default: day}
+            ]);
+            
+            infinitePickers['editTime'] = createInfinitePicker('editTimePicker', [
+                {name: 'hours', label: '時', min: 0, max: 99, default: hours},
+                {name: 'minutes', label: '分', min: 0, max: 59, default: minutes},
+                {name: 'seconds', label: '秒', min: 0, max: 59, default: seconds}
+            ]);
             
             // モーダルを開く
             document.getElementById('editModal').classList.add('active');
-            
-            // 少し遅延してピッカーの値を設定
-            setTimeout(() => {
-                const dateParts = date.split('-');
-                infinitePickers['editDate'].setValue('year', parseInt(dateParts[0]));
-                infinitePickers['editDate'].setValue('month', parseInt(dateParts[1]));
-                infinitePickers['editDate'].setValue('day', parseInt(dateParts[2]));
-                
-                const hours = Math.floor(totalSeconds / 3600);
-                const minutes = Math.floor((totalSeconds % 3600) / 60);
-                const seconds = totalSeconds % 60;
-                
-                infinitePickers['editTime'].setValue('hours', hours);
-                infinitePickers['editTime'].setValue('minutes', minutes);
-                infinitePickers['editTime'].setValue('seconds', seconds);
-            }, 100);
         }
 
         function saveEdit() {
@@ -2260,6 +2289,12 @@
 
         function closeModal(modalId) {
             document.getElementById(modalId).classList.remove('active');
+        }
+        
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('active');
+            currentEditId = null;
+            currentEditType = null;
         }
 
         // ユーティリティ

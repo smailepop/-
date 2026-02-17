@@ -1790,8 +1790,12 @@
                 breakdown[r.task] += seconds;
             });
             
+            // 曜日を取得
+            const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+            const dayOfWeek = weekdays[currentDailyDate.getDay()];
+            
             // テキスト作成
-            const dateText = `${currentDailyDate.getMonth() + 1}/${currentDailyDate.getDate()}（日報）`;
+            const dateText = `${currentDailyDate.getMonth() + 1}/${currentDailyDate.getDate()}（${dayOfWeek}）日報`;
             const breakdownText = Object.entries(breakdown)
                 .sort((a, b) => b[1] - a[1])
                 .map(([task, seconds]) => {

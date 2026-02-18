@@ -883,11 +883,19 @@
             </div>
             <div class="form-group">
                 <label class="form-label">日付</label>
-                <div id="editDatePicker"></div>
+                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px;">
+                    <input type="number" class="form-input" id="editYear" placeholder="年" min="2020" max="2100">
+                    <input type="number" class="form-input" id="editMonth" placeholder="月" min="1" max="12">
+                    <input type="number" class="form-input" id="editDay" placeholder="日" min="1" max="31">
+                </div>
             </div>
             <div class="form-group">
                 <label class="form-label">時間</label>
-                <div id="editTimePicker"></div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                    <input type="number" class="form-input" id="editHours" placeholder="時" min="0" max="99">
+                    <input type="number" class="form-input" id="editMinutes" placeholder="分" min="0" max="59">
+                    <input type="number" class="form-input" id="editSeconds" placeholder="秒" min="0" max="59">
+                </div>
             </div>
             <div class="modal-buttons">
                 <button class="btn btn-danger" onclick="deleteRecord()">削除</button>
@@ -2156,42 +2164,17 @@
             const minutes = parseInt(record.minutes) || 0;
             const seconds = parseInt(record.seconds) || 0;
             
-            alert(`編集データ確認:\n${record.task}\n${year}年${month}月${day}日\n${hours}時間${minutes}分${seconds}秒`);
-            
+            // フォームに値を設定
             document.getElementById('editTask').value = record.task;
+            document.getElementById('editYear').value = year;
+            document.getElementById('editMonth').value = month;
+            document.getElementById('editDay').value = day;
+            document.getElementById('editHours').value = hours;
+            document.getElementById('editMinutes').value = minutes;
+            document.getElementById('editSeconds').value = seconds;
             
-            // DOMを完全にクリアしてから新規作成
-            const datePickerContainer = document.getElementById('editDatePicker');
-            const timePickerContainer = document.getElementById('editTimePicker');
-            
-            datePickerContainer.innerHTML = '';
-            timePickerContainer.innerHTML = '';
-            
-            // まずモーダルを開く
+            // モーダルを開く
             document.getElementById('editModal').classList.add('active');
-            
-            // モーダルが表示されてから少し待つ
-            setTimeout(() => {
-                // 完全に新しいピッカーを作成
-                infinitePickers['editDate'] = createInfinitePicker('editDatePicker', [
-                    {name: 'year', label: '年', min: 2020, max: 2100, default: year},
-                    {name: 'month', label: '月', min: 1, max: 12, default: month},
-                    {name: 'day', label: '日', min: 1, max: 31, default: day}
-                ]);
-                
-                infinitePickers['editTime'] = createInfinitePicker('editTimePicker', [
-                    {name: 'hours', label: '時', min: 0, max: 99, default: hours},
-                    {name: 'minutes', label: '分', min: 0, max: 59, default: minutes},
-                    {name: 'seconds', label: '秒', min: 0, max: 59, default: seconds}
-                ]);
-                
-                // 作成後の値を確認
-                setTimeout(() => {
-                    const dateState = infinitePickers['editDate'].getState();
-                    const timeState = infinitePickers['editTime'].getState();
-                    alert(`ピッカー設定後:\n${dateState.year}年${dateState.month}月${dateState.day}日\n${timeState.hours}時間${timeState.minutes}分${timeState.seconds}秒`);
-                }, 500);
-            }, 100);
         }
 
         function editAggregatedRecord(task, date, totalSeconds) {
@@ -2207,46 +2190,38 @@
             const minutes = Math.floor((totalSeconds % 3600) / 60);
             const seconds = totalSeconds % 60;
             
+            // フォームに値を設定
             document.getElementById('editTask').value = task;
-            
-            // DOMを完全にクリア
-            document.getElementById('editDatePicker').innerHTML = '';
-            document.getElementById('editTimePicker').innerHTML = '';
+            document.getElementById('editYear').value = year;
+            document.getElementById('editMonth').value = month;
+            document.getElementById('editDay').value = day;
+            document.getElementById('editHours').value = hours;
+            document.getElementById('editMinutes').value = minutes;
+            document.getElementById('editSeconds').value = seconds;
             
             // モーダルを開く
             document.getElementById('editModal').classList.add('active');
-            
-            setTimeout(() => {
-                // 完全に新しいピッカーを作成
-                infinitePickers['editDate'] = createInfinitePicker('editDatePicker', [
-                    {name: 'year', label: '年', min: 2020, max: 2100, default: year},
-                    {name: 'month', label: '月', min: 1, max: 12, default: month},
-                    {name: 'day', label: '日', min: 1, max: 31, default: day}
-                ]);
-                
-                infinitePickers['editTime'] = createInfinitePicker('editTimePicker', [
-                    {name: 'hours', label: '時', min: 0, max: 99, default: hours},
-                    {name: 'minutes', label: '分', min: 0, max: 59, default: minutes},
-                    {name: 'seconds', label: '秒', min: 0, max: 59, default: seconds}
-                ]);
-            }, 100);
         }
 
         function saveEdit() {
             const task = document.getElementById('editTask').value;
-            const dateState = infinitePickers['editDate'].getState();
-            const timeState = infinitePickers['editTime'].getState();
+            const year = parseInt(document.getElementById('editYear').value);
+            const month = parseInt(document.getElementById('editMonth').value);
+            const day = parseInt(document.getElementById('editDay').value);
+            const hours = parseInt(document.getElementById('editHours').value) || 0;
+            const minutes = parseInt(document.getElementById('editMinutes').value) || 0;
+            const seconds = parseInt(document.getElementById('editSeconds').value) || 0;
 
-            const date = `${dateState.year}-${String(dateState.month).padStart(2, '0')}-${String(dateState.day).padStart(2, '0')}`;
+            const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
             if (currentEditType === 'single') {
                 const record = records.find(r => r.id === currentEditId);
                 if (record) {
                     record.task = task;
                     record.date = date;
-                    record.hours = timeState.hours;
-                    record.minutes = timeState.minutes;
-                    record.seconds = timeState.seconds;
+                    record.hours = hours;
+                    record.minutes = minutes;
+                    record.seconds = seconds;
                 }
             } else if (currentEditType === 'aggregated') {
                 const [oldTask, oldDate] = currentEditId.split('-').slice(0, 2);
@@ -2259,14 +2234,14 @@
                     id: Date.now().toString(),
                     task: task,
                     date: date,
-                    hours: timeState.hours,
-                    minutes: timeState.minutes,
-                    seconds: timeState.seconds
+                    hours: hours,
+                    minutes: minutes,
+                    seconds: seconds
                 });
             }
 
             saveRecords();
-            closeModal('editModal');
+            closeEditModal();
             updateDailyView();
             updateWeeklyView();
         }

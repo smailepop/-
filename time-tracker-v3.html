@@ -690,24 +690,7 @@
             </div>
 
             <div class="card">
-                <div class="card-header">手動入力</div>
-                <form onsubmit="addManualEntry(event)">
-                    <div class="form-group">
-                        <label class="form-label">作業</label>
-                        <select class="form-select" id="manualTask" required>
-                            <option value="">選択してください</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">日付</label>
-                        <div id="manualDatePicker"></div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">時間</label>
-                        <div id="manualTimePicker"></div>
-                    </div>
-                    <button type="submit" class="btn btn-success" style="width: 100%;">追加</button>
-                </form>
+                <button class="btn btn-success" onclick="openManualEntryModal()" style="width: 100%;">➕ 手動入力</button>
             </div>
         </div>
 
@@ -901,6 +884,55 @@
                 <button class="btn btn-danger" onclick="deleteRecord()">削除</button>
                 <button class="btn btn-secondary" onclick="closeEditModal()">キャンセル</button>
                 <button class="btn btn-success" onclick="saveEdit()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 手動入力モーダル -->
+    <div id="manualEntryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">手動入力</div>
+            <div class="form-group">
+                <label class="form-label">作業</label>
+                <select class="form-select" id="manualEntryTask"></select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">日付</label>
+                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px;">
+                    <input type="number" class="form-input" id="manualEntryYear" placeholder="年" min="2020" max="2100">
+                    <input type="number" class="form-input" id="manualEntryMonth" placeholder="月" min="1" max="12">
+                    <input type="number" class="form-input" id="manualEntryDay" placeholder="日" min="1" max="31">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">時間</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                    <div>
+                        <input type="number" class="form-input" id="manualEntryHours" placeholder="時" min="0" max="99" value="0">
+                        <div style="display: flex; gap: 4px; margin-top: 4px;">
+                            <button type="button" class="btn btn-secondary" onclick="adjustTime('manualEntryHours', -1)" style="flex: 1; padding: 4px;">▼</button>
+                            <button type="button" class="btn btn-secondary" onclick="adjustTime('manualEntryHours', 1)" style="flex: 1; padding: 4px;">▲</button>
+                        </div>
+                    </div>
+                    <div>
+                        <input type="number" class="form-input" id="manualEntryMinutes" placeholder="分" min="0" max="59" value="0">
+                        <div style="display: flex; gap: 4px; margin-top: 4px;">
+                            <button type="button" class="btn btn-secondary" onclick="adjustTime('manualEntryMinutes', -1)" style="flex: 1; padding: 4px;">▼</button>
+                            <button type="button" class="btn btn-secondary" onclick="adjustTime('manualEntryMinutes', 1)" style="flex: 1; padding: 4px;">▲</button>
+                        </div>
+                    </div>
+                    <div>
+                        <input type="number" class="form-input" id="manualEntrySeconds" placeholder="秒" min="0" max="59" value="0">
+                        <div style="display: flex; gap: 4px; margin-top: 4px;">
+                            <button type="button" class="btn btn-secondary" onclick="adjustTime('manualEntrySeconds', -1)" style="flex: 1; padding: 4px;">▼</button>
+                            <button type="button" class="btn btn-secondary" onclick="adjustTime('manualEntrySeconds', 1)" style="flex: 1; padding: 4px;">▲</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeModal('manualEntryModal')">キャンセル</button>
+                <button class="btn btn-success" onclick="saveManualEntry()">追加</button>
             </div>
         </div>
     </div>
@@ -1248,45 +1280,6 @@
             
             const today = new Date();
             
-            // 前回の手動入力値を復元
-            const lastManualDate = localStorage.getItem('lastManualDate');
-            const lastManualTime = localStorage.getItem('lastManualTime');
-            
-            let manualDateDefaults = {
-                year: today.getFullYear(),
-                month: today.getMonth() + 1,
-                day: today.getDate()
-            };
-            
-            let manualTimeDefaults = {
-                hours: 0,
-                minutes: 0,
-                seconds: 0
-            };
-            
-            if (lastManualDate) {
-                const savedDate = JSON.parse(lastManualDate);
-                manualDateDefaults = savedDate;
-            }
-            
-            if (lastManualTime) {
-                const savedTime = JSON.parse(lastManualTime);
-                manualTimeDefaults = savedTime;
-            }
-            
-            // 手動入力用ピッカー
-            infinitePickers['manualDate'] = createInfinitePicker('manualDatePicker', [
-                {name: 'year', label: '年', min: 2020, max: 2100, default: manualDateDefaults.year},
-                {name: 'month', label: '月', min: 1, max: 12, default: manualDateDefaults.month},
-                {name: 'day', label: '日', min: 1, max: 31, default: manualDateDefaults.day}
-            ]);
-            
-            infinitePickers['manualTime'] = createInfinitePicker('manualTimePicker', [
-                {name: 'hours', label: '時', min: 0, max: 99, default: manualTimeDefaults.hours},
-                {name: 'minutes', label: '分', min: 0, max: 59, default: manualTimeDefaults.minutes},
-                {name: 'seconds', label: '秒', min: 0, max: 59, default: manualTimeDefaults.seconds}
-            ]);
-            
             // 履歴用ピッカー
             infinitePickers['historyStartDate'] = createInfinitePicker('historyStartDatePicker', [
                 {name: 'year', label: '年', min: 2020, max: 2100, default: today.getFullYear()},
@@ -1429,7 +1422,7 @@
         }
 
         function updateTaskSelects() {
-            const selects = ['manualTask', 'newTimerTask', 'editTask'];
+            const selects = ['newTimerTask', 'editTask', 'manualEntryTask'];
             selects.forEach(selectId => {
                 const select = document.getElementById(selectId);
                 const currentValue = select.value;
@@ -1611,40 +1604,6 @@
         }
 
         // 手動入力
-        function addManualEntry(e) {
-            e.preventDefault();
-            const task = document.getElementById('manualTask').value;
-            
-            if (!task) {
-                alert('作業を選択してください');
-                return;
-            }
-
-            const dateState = infinitePickers['manualDate'].getState();
-            const timeState = infinitePickers['manualTime'].getState();
-
-            const date = `${dateState.year}-${String(dateState.month).padStart(2, '0')}-${String(dateState.day).padStart(2, '0')}`;
-
-            records.push({
-                id: Date.now().toString(),
-                task: task,
-                date: date,
-                hours: timeState.hours,
-                minutes: timeState.minutes,
-                seconds: timeState.seconds
-            });
-
-            saveRecords();
-            
-            // 前回の入力値を保存（時間だけリセット）
-            localStorage.setItem('lastManualDate', JSON.stringify(dateState));
-            localStorage.setItem('lastManualTime', JSON.stringify(timeState));
-            
-            alert('記録を追加しました');
-            updateDailyView();
-            updateWeeklyView();
-        }
-
         function saveRecords() {
             localStorage.setItem('records', JSON.stringify(records));
         }
@@ -2275,6 +2234,65 @@
             document.getElementById('editModal').classList.remove('active');
             currentEditId = null;
             currentEditType = null;
+        }
+        
+        // 手動入力モーダル
+        function openManualEntryModal() {
+            const today = new Date();
+            document.getElementById('manualEntryYear').value = today.getFullYear();
+            document.getElementById('manualEntryMonth').value = today.getMonth() + 1;
+            document.getElementById('manualEntryDay').value = today.getDate();
+            document.getElementById('manualEntryHours').value = 0;
+            document.getElementById('manualEntryMinutes').value = 0;
+            document.getElementById('manualEntrySeconds').value = 0;
+            document.getElementById('manualEntryModal').classList.add('active');
+        }
+        
+        function adjustTime(inputId, delta) {
+            const input = document.getElementById(inputId);
+            let value = parseInt(input.value) || 0;
+            value += delta;
+            
+            const min = parseInt(input.min);
+            const max = parseInt(input.max);
+            
+            // ループ処理
+            if (value < min) value = max;
+            if (value > max) value = min;
+            
+            input.value = value;
+        }
+        
+        function saveManualEntry() {
+            const task = document.getElementById('manualEntryTask').value;
+            const year = parseInt(document.getElementById('manualEntryYear').value);
+            const month = parseInt(document.getElementById('manualEntryMonth').value);
+            const day = parseInt(document.getElementById('manualEntryDay').value);
+            const hours = parseInt(document.getElementById('manualEntryHours').value) || 0;
+            const minutes = parseInt(document.getElementById('manualEntryMinutes').value) || 0;
+            const seconds = parseInt(document.getElementById('manualEntrySeconds').value) || 0;
+            
+            if (!task || !year || !month || !day) {
+                alert('すべての項目を入力してください');
+                return;
+            }
+            
+            const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            
+            records.push({
+                id: Date.now().toString(),
+                task: task,
+                date: date,
+                hours: hours,
+                minutes: minutes,
+                seconds: seconds
+            });
+            
+            saveRecords();
+            closeModal('manualEntryModal');
+            alert('記録を追加しました');
+            updateDailyView();
+            updateWeeklyView();
         }
 
         // ユーティリティ
